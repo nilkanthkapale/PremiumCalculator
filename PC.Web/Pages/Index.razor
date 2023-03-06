@@ -1,0 +1,130 @@
+﻿@page "/"
+@using PC.Business.interfaces
+@using PC.Data.Models
+
+@inject IRatingService _ratingService;
+@inject IOccupationService _occupationService;
+@inject IPremiumService _premiumService;
+
+<EditForm EditContext="editContext">
+    <DataAnnotationsValidator />
+    <h3>Premium Calculator</h3>
+    <hr />
+    <ValidationSummary />
+
+    <div class="form-group row">
+        <label for="name" class="col-sm-2 col-form-label">
+            Name
+        </label>
+        <div class="col-sm-10">
+            <InputText id="name" class="form-control" placeholder="Name" @bind-Value="PersonInfo.Name" />
+            <ValidationMessage For="@(() => PersonInfo.Name)" />
+        </div>
+    </div>
+
+
+    <div class="form-group row">
+        <label for="Age" class="col-sm-2 col-form-label">
+            Age
+        </label>
+        <div class="col-sm-10">
+            <InputNumber id="age" class="form-control" placeholder="Age" @bind-Value="PersonInfo.Age" />
+            <ValidationMessage For="@(() => PersonInfo.Age)" />
+
+        </div>
+    </div>
+
+
+    <div class="form-group row">
+        <label for="DateOfBrith" class="col-sm-2 col-form-label">
+            Date Of Birth
+        </label>
+        <div class="col-sm-10">
+            <InputDate @bind-Value="PersonInfo.DateOfBirth" min="@minDate" max="@maxDate" class="form-control" />
+            <ValidationMessage For="@(() => PersonInfo.DateOfBirth)" />
+        </div>
+    </div>
+
+    <div class="form-group row">
+        <label for="SumInsured" class="col-sm-2 col-form-label">
+            Sum Insured
+        </label>
+        <div class="col-sm-10">
+            <InputNumber id="SumInsured" class="form-control" TValue="double?" placeholder="Sum Insured" @bind-Value="PersonInfo.SumInsured" />
+            <ValidationMessage For="@(() => PersonInfo.SumInsured)" />
+        </div>
+    </div>
+
+
+    <div class="form-group row">
+        <label for="OccupationId" class="col-sm-2 col-form-label">
+            Occupation
+        </label>
+        <div class="col-sm-10">
+            <InputSelect Value="PersonInfo.OccupationId"
+                         TValue="int"
+                         ValueChanged="(id)=>HandleValidSubmit(id)"
+                         ValueExpression="@(()=>PersonInfo.OccupationId)"
+                         class="form-control">
+                <option value="0">Select</option>
+                @foreach (var occ in Occupations)
+                {
+                    <option value="@occ.Id">@occ.OccupationName</option>
+                }
+            </InputSelect>
+        </div>
+    </div>
+</EditForm>
+
+@if (premium.DeathPremium > 0)
+{
+    <div style="margin-top:20px">
+
+        <h3>Premium Details</h3>
+        <hr />
+
+        <div class="form-group row">
+            <label class="col-sm-2 col-form-label">
+                Death Premium
+            </label>
+            <div class="col-sm-10 premium">
+                @premium.DeathPremium
+            </div>
+        </div>
+        <div class="form-group row">
+            <label class="col-sm-2 col-form-label">
+                TDP Premium
+            </label>
+            <div class="col-sm-10 premium">
+                @premium.TdpPremium
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string maxDate = DateTime.Now.ToString("yyyy/MM/dd");
+    private string minDate = DateTime.Now.AddYears(-70).ToString("yyyy/MM/dd");
+
+    private Person PersonInfo = new Person();
+    private PremiumDetails premium = new();
+    private EditContext editContext;
+    private IEnumerable<Occupation> Occupations = new List<Occupation>();
+
+    protected override void OnInitialized()
+    {
+        Occupations = _occupationService.GetOccupations();
+        editContext = new(PersonInfo);
+    }
+
+    protected void HandleValidSubmit(int id)
+    {
+        @if (editContext.Validate())
+        {
+
+            PersonInfo.OccupationId = id;
+
+            premium = _premiumService.GetPremiumDetails(PersonInfo, id);
+        }
+    }
+}
